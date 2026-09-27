@@ -7,17 +7,15 @@ app="build/Jot.app"
 work="build/tmp"
 
 rm -rf "$app" "$work"
-mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources" "$work/AppIcon.iconset"
+mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources" "$work"
 
 swiftc -O -swift-version 5 -target arm64-apple-macosx14.0 \
     Sources/*.swift -o "$app/Contents/MacOS/Jot"
 
-swift make-icon.swift "$work/icon.png"
-for px in 16 32 128 256 512; do
-    sips -z $px $px "$work/icon.png" --out "$work/AppIcon.iconset/icon_${px}x${px}.png" >/dev/null
-    sips -z $((px * 2)) $((px * 2)) "$work/icon.png" --out "$work/AppIcon.iconset/icon_${px}x${px}@2x.png" >/dev/null
-done
-iconutil -c icns "$work/AppIcon.iconset" -o "$app/Contents/Resources/AppIcon.icns"
+# Compiles the layered icon (light and dark variants) into Assets.car, plus AppIcon.icns for older macOS.
+xcrun actool AppIcon.icon --compile "$app/Contents/Resources" \
+    --platform macosx --minimum-deployment-target 14.0 --app-icon AppIcon \
+    --output-partial-info-plist "$work/icon-info.plist" --errors --warnings >/dev/null
 
 cp Info.plist "$app/Contents/Info.plist"
 codesign --force --sign - "$app"

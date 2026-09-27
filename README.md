@@ -34,7 +34,7 @@ The three faint icons at the bottom right share the note, open the notes drawer,
 
 ## Build and install
 
-Requires macOS 14 or later on Apple silicon, and Xcode or the Xcode Command Line Tools (`xcode-select --install`).
+Runs on macOS 14 or later on Apple silicon. Building needs Xcode 26 or later, which compiles the layered app icon. The Command Line Tools alone are not enough.
 
 ```sh
 git clone https://github.com/zachvivier/jot.git
@@ -56,7 +56,7 @@ The build is ad-hoc signed, not notarized. A copy you build yourself runs normal
 | `Sources/SidebarViews.swift` | Notes drawer, shortcuts panel, bottom buttons |
 | `Sources/MarkdownRenderer.swift` | Markdown to styled text for the preview |
 | `Sources/NoteStore.swift` | `~/notes` folder, file naming, note listing |
-| `make-icon.swift` | Draws the app icon at build time |
+| `AppIcon.icon` | Layered app icon with light and dark variants. Open it in Icon Composer to edit. |
 | `build.sh` | Compiles and bundles `Jot.app` |
 
 ## Known limits

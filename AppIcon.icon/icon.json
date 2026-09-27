@@ -1,0 +1,41 @@
+{
+  "fill-specializations" : [
+    {
+      "value" : {
+        "solid" : "extended-srgb:0.97647,0.97647,0.96863,1.00000"
+      }
+    },
+    {
+      "appearance" : "dark",
+      "value" : {
+        "solid" : "extended-srgb:0.16863,0.16863,0.17647,1.00000"
+      }
+    }
+  ],
+  "groups" : [
+    {
+      "name" : "Page",
+      "layers" : [
+        {
+          "name" : "Heading",
+          "image-name" : "accent.svg"
+        },
+        {
+          "name" : "Lines",
+          "image-name-specializations" : [
+            {
+              "value" : "lines.svg"
+            },
+            {
+              "appearance" : "dark",
+              "value" : "lines-dark.svg"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "supported-platforms" : {
+    "squares" : "shared"
+  }
+}
