@@ -131,6 +131,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         fileMenu.addItem(.separator())
         fileMenu.addItem(withTitle: "Close", action: #selector(NSWindow.performClose(_:)), keyEquivalent: "w")
         fileMenu.addItem(withTitle: "Save", action: #selector(NoteWindowController.saveNote(_:)), keyEquivalent: "s")
+        fileMenu.addItem(.separator())
+        fileMenu.addItem(withTitle: "Move to Trash", action: #selector(NoteWindowController.deleteNote(_:)), keyEquivalent: "")
         main.addItem(submenu(fileMenu, title: "File"))
 
         let editMenu = NSMenu(title: "Edit")

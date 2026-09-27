@@ -1,6 +1,6 @@
 import AppKit
 
-final class NoteWindowController: NSWindowController, NSWindowDelegate, NSTextViewDelegate, NSMenuItemValidation {
+final class NoteWindowController: NSWindowController, NSWindowDelegate, NSTextViewDelegate, NSMenuItemValidation, NSSharingServicePickerDelegate {
     private static var cascadePoint = NSPoint.zero
     private static let editorFont = NSFont.monospacedSystemFont(ofSize: 14, weight: .regular)
     private static let inset = NSSize(width: 28, height: 22)
@@ -30,6 +30,7 @@ final class NoteWindowController: NSWindowController, NSWindowDelegate, NSTextVi
     private let notesPanel = NotesListView()
     private var sidebarWidthConstraint: NSLayoutConstraint!
     private lazy var notesButton = FaintButton(symbol: "sidebar.right", label: "Notes (⌃⌘S)", target: self, action: #selector(toggleNotes(_:)))
+    private lazy var shareButton = FaintButton(symbol: "square.and.arrow.up", label: "Share", target: self, action: #selector(shareNote(_:)))
     private lazy var helpButton = FaintButton(symbol: "gearshape", label: "Shortcuts (⌘/)", target: self, action: #selector(toggleHelp(_:)))
 
     var onClose: ((NoteWindowController) -> Void)?
@@ -56,7 +57,8 @@ final class NoteWindowController: NSWindowController, NSWindowDelegate, NSTextVi
         configureViews(in: window)
         configureSidebar(in: window.contentView!)
         notesPanel.onOpen = { [weak self] url in self?.onOpenRequest?(url) }
-        NotificationCenter.default.addObserver(self, selector: #selector(notesDidChange), name: NoteStore.didChange, object: nil)
+        notesPanel.onDelete = { [weak self] url in self?.trash(url) }
+        NotificationCenter.default.addObserver(self, selector: #selector(notesDidChange(_:)), name: NoteStore.didChange, object: nil)
         window.center()
         Self.cascadePoint = window.cascadeTopLeft(from: Self.cascadePoint)
         updateTitle()
@@ -138,6 +140,7 @@ final class NoteWindowController: NSWindowController, NSWindowDelegate, NSTextVi
             ])
         }
 
+        container.addSubview(shareButton)
         container.addSubview(notesButton)
         container.addSubview(helpButton)
 
@@ -155,6 +158,8 @@ final class NoteWindowController: NSWindowController, NSWindowDelegate, NSTextVi
             helpButton.centerYAnchor.constraint(equalTo: container.bottomAnchor, constant: -Self.barHeight / 2),
             notesButton.trailingAnchor.constraint(equalTo: helpButton.leadingAnchor, constant: -10),
             notesButton.centerYAnchor.constraint(equalTo: helpButton.centerYAnchor),
+            shareButton.trailingAnchor.constraint(equalTo: notesButton.leadingAnchor, constant: -10),
+            shareButton.centerYAnchor.constraint(equalTo: helpButton.centerYAnchor),
         ]
         for scroll in [editorScroll, previewScroll] {
             constraints += [
@@ -243,6 +248,31 @@ final class NoteWindowController: NSWindowController, NSWindowDelegate, NSTextVi
 
     // MARK: - Actions
 
+    @objc func deleteNote(_ sender: Any?) {
+        guard let fileURL else { return NSSound.beep() }
+        trash(fileURL)
+    }
+
+    /// Moves the file to the Trash without asking. Windows showing it react in `notesDidChange`.
+    private func trash(_ url: URL) {
+        do {
+            try FileManager.default.trashItem(at: url, resultingItemURL: nil)
+            NotificationCenter.default.post(name: NoteStore.didChange, object: self, userInfo: [NoteStore.trashedKey: url])
+        } catch {
+            if let window { NSAlert(error: error).beginSheetModal(for: window) }
+        }
+    }
+
+    private func resetToBlank() {
+        editor.string = ""
+        editor.undoManager?.removeAllActions()
+        fileURL = nil
+        isMarkdown = false
+        isDirty = false
+        setPreviewing(false)
+        updateTitle()
+    }
+
     @objc func saveNote(_ sender: Any?) {
         save()
     }
@@ -265,6 +295,35 @@ final class NoteWindowController: NSWindowController, NSWindowDelegate, NSTextVi
 
     @objc func toggleHelp(_ sender: Any?) {
         setPanel(activePanel == .help ? nil : .help)
+    }
+
+    /// Shows the system share menu (Mail, Messages, and so on) for the note's text, plus a Copy item.
+    @objc func shareNote(_ sender: Any?) {
+        guard !editor.string.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return NSSound.beep() }
+        let picker = NSSharingServicePicker(items: [editor.string])
+        picker.delegate = self
+        picker.show(relativeTo: shareButton.bounds, of: shareButton, preferredEdge: .maxY)
+    }
+
+    func sharingServicePicker(
+        _ picker: NSSharingServicePicker,
+        sharingServicesForItems items: [Any],
+        proposedSharingServices proposed: [NSSharingService]
+    ) -> [NSSharingService] {
+        let text = items.first as? String ?? ""
+        let copy = NSSharingService(
+            title: "Copy",
+            image: NSImage(systemSymbolName: "doc.on.doc", accessibilityDescription: "Copy")!,
+            alternateImage: nil
+        ) {
+            NSPasteboard.general.clearContents()
+            NSPasteboard.general.setString(text, forType: .string)
+        }
+        return [copy] + proposed
+    }
+
+    func sharingServicePicker(_ picker: NSSharingServicePicker, didChoose service: NSSharingService?) {
+        service?.subject = fileURL?.deletingPathExtension().lastPathComponent ?? NoteStore.suggestedName(for: editor.string)
     }
 
     override func cancelOperation(_ sender: Any?) {
@@ -364,7 +423,21 @@ final class NoteWindowController: NSWindowController, NSWindowDelegate, NSTextVi
         })
     }
 
-    @objc private func notesDidChange() {
+    /// Refreshes the drawer. If this window's note was trashed, clears it, or keeps any unsaved edits as an untitled note.
+    @objc private func notesDidChange(_ notification: Notification) {
+        if let trashed = notification.userInfo?[NoteStore.trashedKey] as? URL,
+           trashed.standardizedFileURL == fileURL?.standardizedFileURL {
+            if isDirty {
+                fileURL = nil
+                updateTitle()
+            } else {
+                resetToBlank()
+            }
+        }
+        reloadNotesIfShown()
+    }
+
+    private func reloadNotesIfShown() {
         if activePanel == .notes { notesPanel.reload() }
     }
 
@@ -391,6 +464,8 @@ final class NoteWindowController: NSWindowController, NSWindowDelegate, NSTextVi
         case #selector(toggleNotes(_:)):
             menuItem.state = activePanel == .notes ? .on : .off
             return true
+        case #selector(deleteNote(_:)):
+            return fileURL != nil
         case #selector(toggleHelp(_:)):
             menuItem.state = activePanel == .help ? .on : .off
             return true
@@ -416,7 +491,7 @@ final class NoteWindowController: NSWindowController, NSWindowDelegate, NSTextVi
     }
 
     func windowDidBecomeKey(_ notification: Notification) {
-        notesDidChange()
+        reloadNotesIfShown()
     }
 
     func windowShouldClose(_ sender: NSWindow) -> Bool {

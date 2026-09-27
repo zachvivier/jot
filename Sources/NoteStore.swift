@@ -11,6 +11,7 @@ enum NoteStore {
     static var folder = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("notes", isDirectory: true)
     static let noteExtensions: Set<String> = ["txt", "md", "markdown"]
     static let didChange = Notification.Name("JotNotesDidChange")
+    static let trashedKey = "trashedURL"
 
     static func ensureFolder() throws {
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)

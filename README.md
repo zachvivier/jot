@@ -10,6 +10,8 @@ A small, minimal plain-text editor for macOS. Think TextEdit without the formatt
 - Nothing is saved until you press ⌘S. The first save goes straight to `~/notes`, which Jot creates if it does not exist. There is no save dialog.
 - Each note is named after its first line, for example `Grocery list.txt`. A blank note gets a timestamp name.
 - A drawer lists the notes in `~/notes`, newest first. Click one to open it.
+- Share a note by Mail, Messages, or any other macOS share option, or copy it.
+- Hover over a note in the drawer and click its X to move it to the Trash. There is no prompt; restore it from the Trash if needed. Unsaved edits in an open window are kept as an untitled note.
 - Native AppKit app, no dependencies. Markdown is rendered with Apple's built-in parser.
 
 ## Shortcuts
@@ -28,7 +30,7 @@ A small, minimal plain-text editor for macOS. Think TextEdit without the formatt
 | ⌘/ | Shortcuts panel |
 | ⌘W | Close note |
 
-The two faint icons at the bottom right open the notes drawer and the shortcuts panel.
+The three faint icons at the bottom right share the note, open the notes drawer, and open the shortcuts panel.
 
 ## Build and install
 

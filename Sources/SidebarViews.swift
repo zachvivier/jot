@@ -85,6 +85,8 @@ final class HelpPanelView: NSView {
         grid.column(at: 0).width = 40
 
         let buttons = NSGridView(views: [
+            [symbol("xmark"), label("Delete: hover a note")],
+            [symbol("square.and.arrow.up"), label("Share or copy")],
             [symbol("sidebar.right"), label("Notes drawer")],
             [symbol("gearshape"), label("Shortcuts and help")],
         ])
@@ -133,9 +135,10 @@ final class HelpPanelView: NSView {
 
 // MARK: - Notes list
 
-/// Lists the notes folder, newest first. A click opens the note.
+/// Lists the notes folder, newest first. A click opens the note; the X that appears on hover deletes it.
 final class NotesListView: NSView, NSTableViewDataSource, NSTableViewDelegate {
     var onOpen: ((URL) -> Void)?
+    var onDelete: ((URL) -> Void)?
     var currentURL: URL? {
         didSet { highlightCurrent() }
     }
@@ -231,6 +234,7 @@ final class NotesListView: NSView, NSTableViewDataSource, NSTableViewDelegate {
         let note = notes[row]
         cell.title.stringValue = note.name
         cell.detail.stringValue = "\(dateFormatter.string(from: note.modified)) · \(note.url.pathExtension)"
+        cell.onDelete = { [weak self] in self?.onDelete?(note.url) }
         return cell
     }
 }
@@ -252,20 +256,50 @@ private final class NoteRowView: NSTableCellView {
     static let identifier = NSUserInterfaceItemIdentifier("NoteRow")
     let title = label("", size: 13)
     let detail = label("", size: 11, color: .secondaryLabelColor)
+    var onDelete: (() -> Void)?
+    private lazy var deleteButton = FaintButton(symbol: "xmark", label: "Move to Trash", target: self, action: #selector(deleteClicked))
 
     init() {
         super.init(frame: .zero)
         identifier = Self.identifier
+        deleteButton.symbolConfiguration = NSImage.SymbolConfiguration(pointSize: 10, weight: .semibold)
+        deleteButton.isHidden = true
         addSubview(title)
         addSubview(detail)
+        addSubview(deleteButton)
         NSLayoutConstraint.activate([
             title.topAnchor.constraint(equalTo: topAnchor, constant: 4),
             title.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 6),
-            title.trailingAnchor.constraint(lessThanOrEqualTo: trailingAnchor, constant: -6),
+            title.trailingAnchor.constraint(lessThanOrEqualTo: deleteButton.leadingAnchor, constant: -6),
             detail.topAnchor.constraint(equalTo: title.bottomAnchor, constant: 1),
             detail.leadingAnchor.constraint(equalTo: title.leadingAnchor),
-            detail.trailingAnchor.constraint(lessThanOrEqualTo: trailingAnchor, constant: -6),
+            detail.trailingAnchor.constraint(lessThanOrEqualTo: deleteButton.leadingAnchor, constant: -6),
+            deleteButton.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -8),
+            deleteButton.centerYAnchor.constraint(equalTo: centerYAnchor),
         ])
+    }
+
+    override func updateTrackingAreas() {
+        super.updateTrackingAreas()
+        trackingAreas.forEach(removeTrackingArea)
+        addTrackingArea(NSTrackingArea(rect: .zero, options: [.mouseEnteredAndExited, .activeInActiveApp, .inVisibleRect], owner: self))
+    }
+
+    override func mouseEntered(with event: NSEvent) {
+        deleteButton.isHidden = false
+    }
+
+    override func mouseExited(with event: NSEvent) {
+        deleteButton.isHidden = true
+    }
+
+    override func prepareForReuse() {
+        super.prepareForReuse()
+        deleteButton.isHidden = true
+    }
+
+    @objc private func deleteClicked() {
+        onDelete?()
     }
 
     required init?(coder: NSCoder) {
