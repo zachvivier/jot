@@ -45,6 +45,8 @@ cd jot
 
 To keep it in the Dock, open Jot, right-click its Dock icon, and choose **Options → Keep in Dock**.
 
+The icon has a light and a dark version. On macOS 26 and later, the Dock shows the dark version only when **System Settings → Appearance → Icon & widget style** is set to **Dark**. Dark mode alone does not change it. If the Dock still shows an old icon after you rebuild, quit Jot, reopen it, and run `killall Dock` to reload the Dock.
+
 The build is ad-hoc signed, not notarized. A copy you build yourself runs normally. If you copy a built app from another Mac, macOS may block it the first time. Right-click the app and choose **Open** to allow it.
 
 ## Project layout
