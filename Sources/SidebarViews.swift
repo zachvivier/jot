@@ -222,12 +222,29 @@ final class NotesListView: NSView, NSTableViewDataSource, NSTableViewDelegate {
         notes.count
     }
 
+    func tableView(_ tableView: NSTableView, rowViewForRow row: Int) -> NSTableRowView? {
+        NoteRowBackground()
+    }
+
     func tableView(_ tableView: NSTableView, viewFor tableColumn: NSTableColumn?, row: Int) -> NSView? {
         let cell = tableView.makeView(withIdentifier: NoteRowView.identifier, owner: self) as? NoteRowView ?? NoteRowView()
         let note = notes[row]
         cell.title.stringValue = note.name
         cell.detail.stringValue = "\(dateFormatter.string(from: note.modified)) · \(note.url.pathExtension)"
         return cell
+    }
+}
+
+/// Marks the open note with a soft highlight that looks the same whether or not the list has focus.
+private final class NoteRowBackground: NSTableRowView {
+    override var isEmphasized: Bool {
+        get { false }
+        set {}
+    }
+
+    override func drawSelection(in dirtyRect: NSRect) {
+        NSColor.labelColor.withAlphaComponent(0.08).setFill()
+        NSBezierPath(roundedRect: bounds.insetBy(dx: 10, dy: 2), xRadius: 6, yRadius: 6).fill()
     }
 }
 

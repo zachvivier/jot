@@ -8,7 +8,7 @@ struct NoteFile {
 }
 
 enum NoteStore {
-    static let folder = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("notes", isDirectory: true)
+    static var folder = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("notes", isDirectory: true)
     static let noteExtensions: Set<String> = ["txt", "md", "markdown"]
     static let didChange = Notification.Name("JotNotesDidChange")
 

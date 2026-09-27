@@ -17,6 +17,8 @@ final class NoteWindowController: NSWindowController, NSWindowDelegate, NSTextVi
     private var isMarkdown = false
     private var isPreviewing = false
     private var activePanel: SidebarPanel?
+    private var panelLeading: [SidebarPanel: NSLayoutConstraint] = [:]
+    private var panelTransition = 0
 
     private let editorScroll = NSTextView.scrollableTextView()
     private let previewScroll = NSTextView.scrollableTextView()
@@ -123,11 +125,14 @@ final class NoteWindowController: NSWindowController, NSWindowDelegate, NSTextVi
         separator.translatesAutoresizingMaskIntoConstraints = false
         sidebar.addSubview(separator)
 
-        for panel in [helpPanel, notesPanel] {
+        for kind in [SidebarPanel.help, .notes] {
+            let panel = view(for: kind)
+            let leading = panel.leadingAnchor.constraint(equalTo: sidebar.leadingAnchor)
+            panelLeading[kind] = leading
             sidebar.addSubview(panel)
             NSLayoutConstraint.activate([
                 panel.topAnchor.constraint(equalTo: sidebar.topAnchor),
-                panel.leadingAnchor.constraint(equalTo: sidebar.leadingAnchor),
+                leading,
                 panel.widthAnchor.constraint(equalToConstant: Self.sidebarWidth),
                 panel.bottomAnchor.constraint(equalTo: sidebar.bottomAnchor, constant: -Self.barHeight),
             ])
@@ -272,16 +277,60 @@ final class NoteWindowController: NSWindowController, NSWindowDelegate, NSTextVi
 
     private func setPanel(_ panel: SidebarPanel?) {
         guard panel != activePanel else { return }
-        let wasOpen = activePanel != nil
+        let previous = activePanel
         activePanel = panel
         notesButton.isActive = panel == .notes
         helpButton.isActive = panel == .help
 
         guard let panel else { return animateSidebar(open: false) }
-        helpPanel.isHidden = panel != .help
-        notesPanel.isHidden = panel != .notes
         if panel == .notes { notesPanel.reload() }
-        if !wasOpen { animateSidebar(open: true) }
+        if let previous {
+            switchPanel(from: previous, to: panel)
+        } else {
+            showOnly(panel)
+            animateSidebar(open: true)
+        }
+    }
+
+    private func view(for panel: SidebarPanel) -> NSView {
+        panel == .notes ? notesPanel : helpPanel
+    }
+
+    private func showOnly(_ panel: SidebarPanel) {
+        panelTransition += 1
+        for kind in [SidebarPanel.help, .notes] {
+            view(for: kind).isHidden = kind != panel
+            view(for: kind).alphaValue = 1
+            panelLeading[kind]?.constant = 0
+        }
+    }
+
+    /// Crossfades between panels with a short slide. Help sits to the right of Notes, matching the buttons.
+    private func switchPanel(from old: SidebarPanel, to new: SidebarPanel) {
+        panelTransition += 1
+        let transition = panelTransition
+        let shift: CGFloat = new == .help ? 24 : -24
+        let incoming = view(for: new)
+        let outgoing = view(for: old)
+
+        incoming.alphaValue = 0
+        incoming.isHidden = false
+        panelLeading[new]?.constant = shift
+        sidebar.layoutSubtreeIfNeeded()
+
+        NSAnimationContext.runAnimationGroup({ context in
+            context.duration = 0.22
+            context.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+            incoming.animator().alphaValue = 1
+            outgoing.animator().alphaValue = 0
+            panelLeading[new]?.animator().constant = 0
+            panelLeading[old]?.animator().constant = -shift
+        }, completionHandler: { [weak self] in
+            guard let self, self.panelTransition == transition else { return }
+            outgoing.isHidden = true
+            outgoing.alphaValue = 1
+            self.panelLeading[old]?.constant = 0
+        })
     }
 
     /// Slides the sidebar in or out. The text area narrows to make room, so nothing is covered.

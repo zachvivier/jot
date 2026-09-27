@@ -2,6 +2,10 @@
 
 A small, minimal plain-text editor for macOS. Think TextEdit without the formatting toolbar and without the save dialog.
 
+![Jot editing a Markdown note with the notes drawer open](docs/editor.png)
+
+![The same note in Markdown preview with the shortcuts panel open](docs/preview.png)
+
 - Notes open as plain text. Turn on Markdown per note and preview it with ⌘P.
 - Nothing is saved until you press ⌘S. The first save goes straight to `~/notes`, which Jot creates if it does not exist. There is no save dialog.
 - Each note is named after its first line, for example `Grocery list.txt`. A blank note gets a timestamp name.
