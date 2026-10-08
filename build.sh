@@ -10,7 +10,7 @@ rm -rf "$app" "$work"
 mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources" "$work"
 
 swiftc -O -swift-version 5 -target arm64-apple-macosx14.0 \
-    Sources/*.swift -o "$app/Contents/MacOS/Jot"
+    Sources/*.swift Shared/*.swift -o "$app/Contents/MacOS/Jot"
 
 # Compiles the layered icon (light and dark variants) into Assets.car, plus AppIcon.icns for older macOS.
 xcrun actool AppIcon.icon --compile "$app/Contents/Resources" \

@@ -1,4 +1,8 @@
+#if os(iOS)
+import UIKit
+#else
 import AppKit
+#endif
 
 /// Turns Markdown source into a styled, read-only NSAttributedString using Foundation's built-in parser.
 enum MarkdownRenderer {
@@ -13,8 +17,8 @@ enum MarkdownRenderer {
         )
         guard let parsed = try? AttributedString(markdown: source, options: options) else {
             return NSAttributedString(string: source, attributes: [
-                .font: NSFont.systemFont(ofSize: bodySize),
-                .foregroundColor: NSColor.labelColor,
+                .font: PlatformFont.systemFont(ofSize: bodySize),
+                .foregroundColor: PlatformColor.labelColor,
             ])
         }
 
@@ -42,8 +46,8 @@ enum MarkdownRenderer {
                     output.append(NSAttributedString(
                         string: listPrefix(for: listItem, in: kinds) + "\t",
                         attributes: [
-                            .font: NSFont.systemFont(ofSize: bodySize),
-                            .foregroundColor: NSColor.secondaryLabelColor,
+                            .font: PlatformFont.systemFont(ofSize: bodySize),
+                            .foregroundColor: PlatformColor.secondaryLabelColor,
                             .paragraphStyle: paragraph,
                         ]
                     ))
@@ -141,38 +145,32 @@ enum MarkdownRenderer {
         for kinds: [PresentationIntent.IntentType],
         inline: InlinePresentationIntent?
     ) -> [NSAttributedString.Key: Any] {
-        var font = NSFont.systemFont(ofSize: bodySize)
-        var color = NSColor.labelColor
+        var font = PlatformFont.systemFont(ofSize: bodySize)
+        var color = PlatformColor.labelColor
         var attributes: [NSAttributedString.Key: Any] = [:]
 
         for kind in kinds.map(\.kind) {
             switch kind {
             case .header(let level):
                 let sizes: [CGFloat] = [26, 21, 18, 16, 15, 15]
-                font = NSFont.systemFont(ofSize: sizes[min(level, 6) - 1], weight: level <= 2 ? .bold : .semibold)
+                font = PlatformFont.systemFont(ofSize: sizes[min(level, 6) - 1], weight: level <= 2 ? .bold : .semibold)
             case .codeBlock:
-                font = NSFont.monospacedSystemFont(ofSize: bodySize - 2, weight: .regular)
-                attributes[.backgroundColor] = NSColor.quaternaryLabelColor.withAlphaComponent(0.12)
+                font = PlatformFont.monospacedSystemFont(ofSize: bodySize - 2, weight: .regular)
+                attributes[.backgroundColor] = PlatformColor.quaternaryLabelColor.withAlphaComponent(0.12)
             case .blockQuote:
                 color = .secondaryLabelColor
             case .tableHeaderRow:
-                font = NSFont.systemFont(ofSize: bodySize, weight: .semibold)
+                font = PlatformFont.systemFont(ofSize: bodySize, weight: .semibold)
             default:
                 break
             }
         }
 
         if let inline {
-            var traits: NSFontDescriptor.SymbolicTraits = []
-            if inline.contains(.stronglyEmphasized) { traits.insert(.bold) }
-            if inline.contains(.emphasized) { traits.insert(.italic) }
-            if !traits.isEmpty {
-                let descriptor = font.fontDescriptor.withSymbolicTraits(font.fontDescriptor.symbolicTraits.union(traits))
-                font = NSFont(descriptor: descriptor, size: font.pointSize) ?? font
-            }
+            font = font.adding(bold: inline.contains(.stronglyEmphasized), italic: inline.contains(.emphasized))
             if inline.contains(.code) {
-                font = NSFont.monospacedSystemFont(ofSize: font.pointSize - 1, weight: .regular)
-                attributes[.backgroundColor] = NSColor.quaternaryLabelColor.withAlphaComponent(0.12)
+                font = PlatformFont.monospacedSystemFont(ofSize: font.pointSize - 1, weight: .regular)
+                attributes[.backgroundColor] = PlatformColor.quaternaryLabelColor.withAlphaComponent(0.12)
             }
             if inline.contains(.strikethrough) {
                 attributes[.strikethroughStyle] = NSUnderlineStyle.single.rawValue

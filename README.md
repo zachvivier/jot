@@ -49,6 +49,28 @@ The icon has a light and a dark version. On macOS 26 and later, the Dock shows t
 
 The build is ad-hoc signed, not notarized. A copy you build yourself runs normally. If you copy a built app from another Mac, macOS may block it the first time. Right-click the app and choose **Open** to allow it.
 
+## iPhone
+
+The `iOS` folder holds an iPhone version that shares the note naming and Markdown preview code with the Mac app.
+
+- Notes save as you type, so there is no ⌘S. A note keeps its name in step with its first line until you rename the file elsewhere.
+- Notes live in the app's own folder. Open the Files app and go to **On My iPhone › Jot** to see them. They do not sync with the Mac.
+- Faint icons at the bottom preview Markdown, share the note, open the notes drawer, and open a menu with New Note, Markdown on or off, and Delete Note.
+- The notes drawer slides up from the bottom. Tap a note to open it, or swipe left to delete it. Close the drawer with its ☰ button, by dragging it down, or by tapping the note above it.
+- Share sends the text to Messages, Mail, or Copy. AirDrop sends the file, so a Mac receives `Name.txt`.
+- Deleted notes move to **Recently Deleted** inside the Jot folder in Files.
+
+Building needs Xcode 26 or later and [XcodeGen](https://github.com/yonaskolb/XcodeGen) (`brew install xcodegen`).
+
+```sh
+cd iOS
+xcodegen              # creates Jot.xcodeproj from project.yml
+open Jot.xcodeproj    # run on a simulator or a connected iPhone
+./release.sh          # archives and uploads a build to TestFlight
+```
+
+`release.sh` needs an app record for `io.github.zachvivier.jot` in App Store Connect. It sets the build number from the date and time, so each upload is unique.
+
 ## Project layout
 
 | Path | Purpose |
@@ -56,8 +78,12 @@ The build is ad-hoc signed, not notarized. A copy you build yourself runs normal
 | `Sources/AppDelegate.swift` | App lifecycle, menus, opening files |
 | `Sources/NoteWindowController.swift` | Editor window, saving, preview, sidebar |
 | `Sources/SidebarViews.swift` | Notes drawer, shortcuts panel, bottom buttons |
-| `Sources/MarkdownRenderer.swift` | Markdown to styled text for the preview |
-| `Sources/NoteStore.swift` | `~/notes` folder, file naming, note listing |
+| `Shared/MarkdownRenderer.swift` | Markdown to styled text for the preview (Mac and iPhone) |
+| `Shared/NoteStore.swift` | Notes folder, file naming, note listing (Mac and iPhone) |
+| `Shared/Platform.swift` | Font and color names that differ between AppKit and UIKit |
+| `iOS/Sources` | iPhone app: editor, notes drawer, autosave, sharing |
+| `iOS/project.yml` | XcodeGen spec for the iPhone project |
+| `iOS/release.sh` | Archives and uploads the iPhone app to TestFlight |
 | `AppIcon.icon` | Layered app icon with light and dark variants. Open it in Icon Composer to edit. |
 | `build.sh` | Compiles and bundles `Jot.app` |
 

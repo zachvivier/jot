@@ -8,7 +8,12 @@ struct NoteFile {
 }
 
 enum NoteStore {
+    #if os(iOS)
+    /// The app's Documents folder, shown in the Files app under On My iPhone › Jot.
+    static var folder = URL.documentsDirectory
+    #else
     static var folder = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("notes", isDirectory: true)
+    #endif
     static let noteExtensions: Set<String> = ["txt", "md", "markdown"]
     static let didChange = Notification.Name("JotNotesDidChange")
     static let trashedKey = "trashedURL"
@@ -56,10 +61,12 @@ enum NoteStore {
     }
 
     /// Returns a URL in `directory` that does not collide with an existing file ("Name.txt", "Name 2.txt", ...).
-    static func uniqueURL(base: String, ext: String, in directory: URL) -> URL {
+    /// A file at `excluding` does not count as a collision, so a note can keep its own name.
+    static func uniqueURL(base: String, ext: String, in directory: URL, excluding: URL? = nil) -> URL {
         var candidate = directory.appendingPathComponent(base).appendingPathExtension(ext)
         var counter = 2
-        while FileManager.default.fileExists(atPath: candidate.path) {
+        while FileManager.default.fileExists(atPath: candidate.path),
+              candidate.standardizedFileURL.path.lowercased() != excluding?.standardizedFileURL.path.lowercased() {
             candidate = directory.appendingPathComponent("\(base) \(counter)").appendingPathExtension(ext)
             counter += 1
         }
