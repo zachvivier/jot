@@ -9,6 +9,10 @@ struct EditorView: UIViewRepresentable {
     @Binding var text: String
     /// Increase to move the cursor into the editor.
     var focusRequest: Int
+    /// False while the preview covers the editor, so a note opened from preview doesn't fade out a hidden one.
+    var isShown = true
+
+    static let fadeDuration = 0.3
 
     func makeCoordinator() -> Coordinator {
         Coordinator(parent: self)
@@ -29,6 +33,7 @@ struct EditorView: UIViewRepresentable {
     func updateUIView(_ view: UITextView, context: Context) {
         context.coordinator.parent = self
         if view.text != text {
+            if context.coordinator.wasShown { Self.crossfade(view) }
             view.text = text
             Coordinator.restyle(view)
             view.selectedRange = NSRange(location: 0, length: 0)
@@ -38,11 +43,29 @@ struct EditorView: UIViewRepresentable {
             context.coordinator.focusRequest = focusRequest
             DispatchQueue.main.async { view.becomeFirstResponder() }
         }
+        context.coordinator.wasShown = isShown
+    }
+
+    /// Lays a snapshot of the old text over the editor and fades it out as the new text fades in.
+    private static func crossfade(_ view: UITextView) {
+        guard view.window != nil, let superview = view.superview,
+              let snapshot = view.snapshotView(afterScreenUpdates: false)
+        else { return }
+        snapshot.frame = view.frame
+        superview.insertSubview(snapshot, aboveSubview: view)
+        view.alpha = 0
+        UIView.animate(withDuration: fadeDuration, delay: 0, options: .curveEaseInOut) {
+            snapshot.alpha = 0
+            view.alpha = 1
+        } completion: { _ in
+            snapshot.removeFromSuperview()
+        }
     }
 
     final class Coordinator: NSObject, UITextViewDelegate {
         var parent: EditorView
         var focusRequest = 0
+        var wasShown = true
 
         init(parent: EditorView) {
             self.parent = parent

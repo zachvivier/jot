@@ -1,12 +1,13 @@
 import SwiftUI
 
-/// A sheet that lists saved notes, newest first. Tap to open; swipe left to delete.
+/// A sheet that lists saved notes. Tap to open, swipe left to delete, or hold and drag to reorder.
 /// Close it with the three-lines button, a downward drag, or a tap on the note above.
 struct NotesDrawer: View {
     let notes: [NoteFile]
     let currentURL: URL?
     let onOpen: (URL) -> Void
     let onDelete: (URL) -> Void
+    let onMove: (IndexSet, Int) -> Void
     let onNew: () -> Void
     let onClose: () -> Void
 
@@ -39,8 +40,11 @@ struct NotesDrawer: View {
                     .padding(.top, 40)
                 Spacer()
             } else {
-                List(notes, id: \.url) { note in
-                    row(for: note)
+                List {
+                    ForEach(notes, id: \.url) { note in
+                        row(for: note)
+                    }
+                    .onMove(perform: onMove)
                 }
                 .listStyle(.plain)
                 .scrollContentBackground(.hidden)

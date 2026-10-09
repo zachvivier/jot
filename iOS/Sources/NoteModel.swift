@@ -17,6 +17,7 @@ final class NoteModel {
     private var saveTask: Task<Void, Never>?
 
     private static let lastNoteKey = "lastNote"
+    private static let orderKey = "noteOrder"
     private static let saveDelay = Duration.seconds(1)
     private static let deletedFolder = NoteStore.folder.appendingPathComponent("Recently Deleted", isDirectory: true)
 
@@ -71,14 +72,33 @@ final class NoteModel {
             )
             try FileManager.default.moveItem(at: url, to: destination)
             if url.standardizedFileURL == fileURL?.standardizedFileURL { reset() }
+            order.removeAll { $0 == url.lastPathComponent }
         } catch {
             errorMessage = error.localizedDescription
         }
         refreshNotes()
     }
 
+    /// Notes the user has placed by dragging keep their spot. Notes not yet placed sit on top, newest first.
     func refreshNotes() {
-        notes = NoteStore.listNotes()
+        let listed = NoteStore.listNotes()
+        let positions = Dictionary(order.enumerated().map { ($1, $0) }, uniquingKeysWith: { first, _ in first })
+        let unplaced = listed.filter { positions[$0.url.lastPathComponent] == nil }
+        let placed = listed
+            .compactMap { note in positions[note.url.lastPathComponent].map { (note, $0) } }
+            .sorted { $0.1 < $1.1 }
+            .map(\.0)
+        notes = unplaced + placed
+    }
+
+    func moveNotes(from source: IndexSet, to destination: Int) {
+        notes.move(fromOffsets: source, toOffset: destination)
+        order = notes.map(\.url.lastPathComponent)
+    }
+
+    private var order: [String] {
+        get { UserDefaults.standard.stringArray(forKey: Self.orderKey) ?? [] }
+        set { UserDefaults.standard.set(newValue, forKey: Self.orderKey) }
     }
 
     func save() {
@@ -94,6 +114,7 @@ final class NoteModel {
             let target = targetURL()
             if let fileURL, target != fileURL {
                 try FileManager.default.moveItem(at: fileURL, to: target)
+                order = order.map { $0 == fileURL.lastPathComponent ? target.lastPathComponent : $0 }
                 self.fileURL = target
             }
             try text.write(to: target, atomically: true, encoding: .utf8)

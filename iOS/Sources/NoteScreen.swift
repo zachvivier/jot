@@ -22,20 +22,21 @@ struct NoteScreen: View {
                         .ignoresSafeArea()
                         .onTapGesture { returnToNote() }
                         .transition(.opacity)
+                        .zIndex(1)
 
                     NotesDrawer(
                         notes: model.notes,
                         currentURL: model.fileURL,
-                        onOpen: { url in
-                            model.open(url)
-                            setNotes(false)
-                        },
+                        onOpen: openNote,
                         onDelete: model.delete,
+                        onMove: model.moveNotes,
                         onNew: newNote,
                         onClose: returnToNote
                     )
                     .frame(height: geometry.size.height * 0.55)
                     .transition(.move(edge: .bottom))
+                    // Without a z-index, a leaving view drops behind the page and seems to vanish.
+                    .zIndex(2)
                 }
             }
         }
@@ -59,7 +60,11 @@ struct NoteScreen: View {
     /// The editor stays in place while previewing, so the cursor and scroll position survive.
     private var page: some View {
         ZStack {
-            EditorView(text: Binding(get: { model.text }, set: model.edit), focusRequest: focusRequest)
+            EditorView(
+                text: Binding(get: { model.text }, set: model.edit),
+                focusRequest: focusRequest,
+                isShown: !model.isPreviewing
+            )
                 .opacity(model.isPreviewing ? 0 : 1)
                 .allowsHitTesting(!model.isPreviewing)
                 .accessibilityHidden(model.isPreviewing)
@@ -116,6 +121,14 @@ struct NoteScreen: View {
             model.refreshNotes()
         }
         withAnimation(.easeInOut(duration: 0.22)) { showsNotes = open }
+    }
+
+    /// The drawer slides away while the old note fades into the new one.
+    private func openNote(_ url: URL) {
+        withAnimation(.easeInOut(duration: EditorView.fadeDuration)) {
+            model.open(url)
+            showsNotes = false
+        }
     }
 
     private func returnToNote() {
