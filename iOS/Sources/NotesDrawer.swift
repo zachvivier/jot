@@ -18,13 +18,15 @@ struct NotesDrawer: View {
             header
                 .contentShape(Rectangle())
                 .gesture(
-                    DragGesture()
+                    // Measured against the screen: the header moves with the drag, so local coordinates feed back and jitter.
+                    DragGesture(coordinateSpace: .global)
                         .onChanged { dragOffset = max(0, $0.translation.height) }
                         .onEnded { value in
-                            if value.translation.height > 80 {
+                            if value.predictedEndTranslation.height > 120 {
                                 onClose()
+                            } else {
+                                withAnimation(.easeOut(duration: 0.2)) { dragOffset = 0 }
                             }
-                            withAnimation(.easeOut(duration: 0.2)) { dragOffset = 0 }
                         }
                 )
 
