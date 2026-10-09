@@ -120,3 +120,32 @@ struct EditorView: UIViewRepresentable {
         }
     }
 }
+
+/// Read-only Markdown preview, rendered by the same code as the Mac app.
+struct PreviewView: UIViewRepresentable {
+    let source: String
+
+    func makeUIView(context: Context) -> UITextView {
+        let view = UITextView()
+        view.isEditable = false
+        view.backgroundColor = .clear
+        view.textContainerInset = textInset
+        view.alwaysBounceVertical = true
+        view.tintColor = Theme.accentUIColor
+        return view
+    }
+
+    func updateUIView(_ view: UITextView, context: Context) {
+        guard context.coordinator.renderedSource != source else { return }
+        context.coordinator.renderedSource = source
+        view.attributedText = MarkdownRenderer.render(source)
+    }
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator()
+    }
+
+    final class Coordinator {
+        var renderedSource: String?
+    }
+}

@@ -52,8 +52,17 @@ struct NoteScreen: View {
         }
     }
 
+    /// The editor stays in place while previewing, so the cursor and scroll position survive.
     private var page: some View {
-        EditorView(text: Binding(get: { model.text }, set: model.edit), focusRequest: focusRequest)
+        ZStack {
+            EditorView(text: Binding(get: { model.text }, set: model.edit), focusRequest: focusRequest)
+                .opacity(model.isPreviewing ? 0 : 1)
+                .allowsHitTesting(!model.isPreviewing)
+                .accessibilityHidden(model.isPreviewing)
+            if model.isPreviewing {
+                PreviewView(source: model.text)
+            }
+        }
     }
 
     private var bottomBar: some View {
@@ -66,6 +75,8 @@ struct NoteScreen: View {
                 .padding(.leading, 20)
             Spacer(minLength: 12)
 
+            FaintButton(symbol: model.isPreviewing ? "eye.fill" : "eye", label: "Preview", isActive: model.isPreviewing, action: togglePreview)
+                .keyboardShortcut("p")
             FaintButton(symbol: "square.and.arrow.up", label: "Share", action: share)
             FaintButton(symbol: "line.3.horizontal", label: "Notes", isActive: showsNotes) {
                 setNotes(!showsNotes)
@@ -105,7 +116,17 @@ struct NoteScreen: View {
 
     private func returnToNote() {
         setNotes(false)
-        focusRequest += 1
+        if !model.isPreviewing { focusRequest += 1 }
+    }
+
+    private func togglePreview() {
+        if model.isPreviewing {
+            model.isPreviewing = false
+            focusRequest += 1
+        } else {
+            UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+            model.isPreviewing = true
+        }
     }
 
     private func newNote() {

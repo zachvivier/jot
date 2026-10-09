@@ -9,6 +9,7 @@ final class NoteModel {
     private(set) var text = ""
     private(set) var fileURL: URL?
     private(set) var notes: [NoteFile] = []
+    var isPreviewing = false
     var errorMessage: String?
 
     private var isDirty = false
@@ -132,6 +133,7 @@ final class NoteModel {
         saveTask?.cancel()
         text = loaded
         fileURL = url
+        isPreviewing = false
         isDirty = false
         namesFromFirstLine = Self.isNamedAfterFirstLine(url, text: loaded)
         UserDefaults.standard.set(url.lastPathComponent, forKey: Self.lastNoteKey)
@@ -141,6 +143,7 @@ final class NoteModel {
         saveTask?.cancel()
         text = ""
         fileURL = nil
+        isPreviewing = false
         isDirty = false
         namesFromFirstLine = true
         UserDefaults.standard.removeObject(forKey: Self.lastNoteKey)

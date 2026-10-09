@@ -56,7 +56,8 @@ The `iOS` folder holds an iPhone version that shares the note naming and Markdow
 - Notes save as you type, so there is no ⌘S. A note keeps its name in step with its first line until you rename the file elsewhere.
 - Notes live in the app's own folder. Open the Files app and go to **On My iPhone › Jot** to see them. They do not sync with the Mac.
 - Markdown is styled as you type. Headings grow, bold and italic show, lists get a hanging indent, and the markers fade but stay editable. The file stays plain text. New notes save as `.md`; existing `.txt` notes keep their extension.
-- Faint icons at the bottom share the note, open the notes drawer, and open a menu with New Note and Delete Note.
+- The eye icon at the bottom hides the Markdown markers and shows the note fully formatted. It is read-only; tap the eye again to keep typing.
+- Faint icons at the bottom also share the note, open the notes drawer, and open a menu with New Note and Delete Note.
 - The notes drawer slides up from the bottom. Tap a note to open it, or swipe left to delete it. Close the drawer with its ☰ button, by dragging it down, or by tapping the note above it.
 - Select text and choose **Format** in the edit menu to make it bold, italic, or struck through. Jot adds the Markdown markers (`**`, `*`, `~~`). Choose the same option again to remove them. Markdown has no underline, so there is no Underline option.
 - Autocorrect, smart quotes and dashes, and predictive text are on, as in Apple Notes.
