@@ -57,7 +57,11 @@ struct NoteScreen: View {
         if model.isPreviewing {
             PreviewView(source: model.text)
         } else {
-            EditorView(text: Binding(get: { model.text }, set: model.edit), focusRequest: focusRequest)
+            EditorView(
+                text: Binding(get: { model.text }, set: model.edit),
+                focusRequest: focusRequest,
+                onFormat: { if !model.isMarkdown { model.toggleMarkdown() } }
+            )
         }
     }
 

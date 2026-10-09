@@ -47,7 +47,8 @@ enum NoteStore {
             .first { !$0.isEmpty } ?? ""
 
         let cleaned = firstLine
-            .trimmingCharacters(in: CharacterSet(charactersIn: "#>-*+ \t"))
+            .replacingOccurrences(of: "[*~`]", with: "", options: .regularExpression)
+            .trimmingCharacters(in: CharacterSet(charactersIn: "#>-+ \t"))
             .replacingOccurrences(of: "/", with: "-")
             .replacingOccurrences(of: ":", with: "-")
             .trimmingCharacters(in: CharacterSet(charactersIn: ". "))

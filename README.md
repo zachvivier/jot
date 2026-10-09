@@ -57,6 +57,8 @@ The `iOS` folder holds an iPhone version that shares the note naming and Markdow
 - Notes live in the app's own folder. Open the Files app and go to **On My iPhone › Jot** to see them. They do not sync with the Mac.
 - Faint icons at the bottom preview Markdown, share the note, open the notes drawer, and open a menu with New Note, Markdown on or off, and Delete Note.
 - The notes drawer slides up from the bottom. Tap a note to open it, or swipe left to delete it. Close the drawer with its ☰ button, by dragging it down, or by tapping the note above it.
+- Select text and choose **Format** in the edit menu to make it bold, italic, or struck through. Jot adds the Markdown markers (`**`, `*`, `~~`) and turns Markdown on for the note. Choose the same option again to remove them. Markdown has no underline, so there is no Underline option.
+- Autocorrect, smart quotes and dashes, and predictive text are on, as in Apple Notes.
 - Share sends the text to Messages, Mail, or Copy. AirDrop sends the file, so a Mac receives `Name.txt`.
 - Deleted notes move to **Recently Deleted** inside the Jot folder in Files.
 
