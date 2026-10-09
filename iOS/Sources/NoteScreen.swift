@@ -40,7 +40,11 @@ struct NoteScreen: View {
             }
         }
         .onAppear {
-            if !model.hasText { focusRequest += 1 }
+            if model.notes.isEmpty {
+                focusRequest += 1
+            } else {
+                showsNotes = true
+            }
         }
         .onChange(of: scenePhase) { _, phase in
             if phase != .active { model.save() }
