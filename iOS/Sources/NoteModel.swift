@@ -8,9 +8,7 @@ import Observation
 final class NoteModel {
     private(set) var text = ""
     private(set) var fileURL: URL?
-    private(set) var isMarkdown = false
     private(set) var notes: [NoteFile] = []
-    var isPreviewing = false
     var errorMessage: String?
 
     private var isDirty = false
@@ -25,9 +23,8 @@ final class NoteModel {
         !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
-    var status: String {
-        let name = fileURL?.lastPathComponent ?? "Untitled"
-        return "\(name) · \(isPreviewing ? "Preview" : isMarkdown ? "Markdown" : "Plain text")"
+    var title: String {
+        fileURL?.lastPathComponent ?? "Untitled"
     }
 
     init() {
@@ -45,15 +42,6 @@ final class NoteModel {
         text = newText
         isDirty = true
         scheduleSave()
-    }
-
-    func toggleMarkdown() {
-        isMarkdown.toggle()
-        if !isMarkdown { isPreviewing = false }
-        if fileURL != nil {
-            isDirty = true
-            save()
-        }
     }
 
     func newNote() {
@@ -117,12 +105,13 @@ final class NoteModel {
         }
     }
 
-    /// Picks the file to write. While a note is still named after its first line, the name follows edits to that line.
+    /// Picks the file to write. New notes are Markdown; existing files keep their extension.
+    /// While a note is still named after its first line, the name follows edits to that line.
     private func targetURL() -> URL {
-        let ext = isMarkdown ? "md" : "txt"
         guard let fileURL else {
-            return NoteStore.uniqueURL(base: NoteStore.suggestedName(for: text), ext: ext, in: NoteStore.folder)
+            return NoteStore.uniqueURL(base: NoteStore.suggestedName(for: text), ext: "md", in: NoteStore.folder)
         }
+        let ext = fileURL.pathExtension
         let currentBase = fileURL.deletingPathExtension().lastPathComponent
         let base = namesFromFirstLine && hasText ? NoteStore.suggestedName(for: text) : currentBase
         return NoteStore.uniqueURL(base: base, ext: ext, in: fileURL.deletingLastPathComponent(), excluding: fileURL)
@@ -143,8 +132,6 @@ final class NoteModel {
         saveTask?.cancel()
         text = loaded
         fileURL = url
-        isMarkdown = ["md", "markdown"].contains(url.pathExtension.lowercased())
-        isPreviewing = false
         isDirty = false
         namesFromFirstLine = Self.isNamedAfterFirstLine(url, text: loaded)
         UserDefaults.standard.set(url.lastPathComponent, forKey: Self.lastNoteKey)
@@ -154,8 +141,6 @@ final class NoteModel {
         saveTask?.cancel()
         text = ""
         fileURL = nil
-        isMarkdown = false
-        isPreviewing = false
         isDirty = false
         namesFromFirstLine = true
         UserDefaults.standard.removeObject(forKey: Self.lastNoteKey)

@@ -7,6 +7,7 @@ typealias PlatformColor = UIColor
 extension UIColor {
     static var labelColor: UIColor { .label }
     static var secondaryLabelColor: UIColor { .secondaryLabel }
+    static var tertiaryLabelColor: UIColor { .tertiaryLabel }
     static var quaternaryLabelColor: UIColor { .quaternaryLabel }
 }
 

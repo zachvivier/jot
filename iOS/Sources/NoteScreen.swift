@@ -52,22 +52,13 @@ struct NoteScreen: View {
         }
     }
 
-    @ViewBuilder
     private var page: some View {
-        if model.isPreviewing {
-            PreviewView(source: model.text)
-        } else {
-            EditorView(
-                text: Binding(get: { model.text }, set: model.edit),
-                focusRequest: focusRequest,
-                onFormat: { if !model.isMarkdown { model.toggleMarkdown() } }
-            )
-        }
+        EditorView(text: Binding(get: { model.text }, set: model.edit), focusRequest: focusRequest)
     }
 
     private var bottomBar: some View {
         HStack(spacing: 0) {
-            Text(model.status)
+            Text(model.title)
                 .font(.caption)
                 .foregroundStyle(.tertiary)
                 .lineLimit(1)
@@ -75,12 +66,6 @@ struct NoteScreen: View {
                 .padding(.leading, 20)
             Spacer(minLength: 12)
 
-            if model.isMarkdown {
-                FaintButton(symbol: "eye", label: "Preview", isActive: model.isPreviewing) {
-                    model.isPreviewing.toggle()
-                }
-                .keyboardShortcut("p")
-            }
             FaintButton(symbol: "square.and.arrow.up", label: "Share", action: share)
             FaintButton(symbol: "line.3.horizontal", label: "Notes", isActive: showsNotes) {
                 setNotes(!showsNotes)
@@ -90,10 +75,6 @@ struct NoteScreen: View {
             Menu {
                 Button("New Note", systemImage: "square.and.pencil", action: newNote)
                     .keyboardShortcut("n")
-                Toggle(isOn: Binding(get: { model.isMarkdown }, set: { _ in model.toggleMarkdown() })) {
-                    Label("Markdown", systemImage: "number")
-                }
-                .keyboardShortcut("m", modifiers: [.shift, .command])
                 if let url = model.fileURL {
                     Button("Delete Note", systemImage: "trash", role: .destructive) {
                         model.delete(url)
@@ -124,7 +105,7 @@ struct NoteScreen: View {
 
     private func returnToNote() {
         setNotes(false)
-        if !model.isPreviewing { focusRequest += 1 }
+        focusRequest += 1
     }
 
     private func newNote() {

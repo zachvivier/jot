@@ -3,23 +3,12 @@ import UIKit
 
 private let textInset = UIEdgeInsets(top: 18, left: 18, bottom: 18, right: 18)
 
-/// Plain-text editor with the same typing aids as Apple Notes. The edit menu adds Markdown formatting.
+/// Plain-text editor with the same typing aids as Apple Notes. Markdown is styled live as you type,
+/// and the edit menu adds Markdown formatting.
 struct EditorView: UIViewRepresentable {
     @Binding var text: String
     /// Increase to move the cursor into the editor.
     var focusRequest: Int
-    /// Called after a Format command adds or removes Markdown markers.
-    var onFormat: () -> Void
-
-    private static let attributes: [NSAttributedString.Key: Any] = {
-        let paragraph = NSMutableParagraphStyle()
-        paragraph.lineHeightMultiple = 1.2
-        return [
-            .font: UIFont.monospacedSystemFont(ofSize: 15, weight: .regular),
-            .foregroundColor: UIColor.label,
-            .paragraphStyle: paragraph,
-        ]
-    }()
 
     func makeCoordinator() -> Coordinator {
         Coordinator(parent: self)
@@ -30,7 +19,7 @@ struct EditorView: UIViewRepresentable {
         view.delegate = context.coordinator
         view.backgroundColor = .clear
         view.textContainerInset = textInset
-        view.typingAttributes = Self.attributes
+        view.typingAttributes = MarkdownHighlighter.baseAttributes
         view.keyboardDismissMode = .interactive
         view.alwaysBounceVertical = true
         view.tintColor = Theme.accentUIColor
@@ -40,8 +29,8 @@ struct EditorView: UIViewRepresentable {
     func updateUIView(_ view: UITextView, context: Context) {
         context.coordinator.parent = self
         if view.text != text {
-            view.attributedText = NSAttributedString(string: text, attributes: Self.attributes)
-            view.typingAttributes = Self.attributes
+            view.text = text
+            Coordinator.restyle(view)
             view.selectedRange = NSRange(location: 0, length: 0)
             view.setContentOffset(.zero, animated: false)
         }
@@ -61,6 +50,14 @@ struct EditorView: UIViewRepresentable {
 
         func textViewDidChange(_ textView: UITextView) {
             parent.text = textView.text
+            Self.restyle(textView)
+        }
+
+        /// Skips styling while a word is still being composed (dictation, Japanese, and similar keyboards).
+        static func restyle(_ textView: UITextView) {
+            guard textView.markedTextRange == nil else { return }
+            MarkdownHighlighter.style(textView.textStorage)
+            textView.typingAttributes = MarkdownHighlighter.baseAttributes
         }
 
         func textView(_ textView: UITextView, editMenuForTextIn range: NSRange, suggestedActions: [UIMenuElement]) -> UIMenu? {
@@ -108,7 +105,7 @@ struct EditorView: UIViewRepresentable {
             textView.replace(textRange, withText: replacement)
             textView.selectedRange = selection
             parent.text = textView.text
-            parent.onFormat()
+            Self.restyle(textView)
         }
 
         /// True when the same run of marker characters sits on both sides of `range`. A run of three
@@ -121,34 +118,5 @@ struct EditorView: UIViewRepresentable {
             while NSMaxRange(range) + after < text.length, text.character(at: NSMaxRange(range) + after) == character { after += 1 }
             return before == after && (before == marker.utf16.count || before == 3)
         }
-    }
-}
-
-/// Read-only Markdown preview, rendered by the same code as the Mac app.
-struct PreviewView: UIViewRepresentable {
-    let source: String
-
-    func makeUIView(context: Context) -> UITextView {
-        let view = UITextView()
-        view.isEditable = false
-        view.backgroundColor = .clear
-        view.textContainerInset = textInset
-        view.alwaysBounceVertical = true
-        view.tintColor = Theme.accentUIColor
-        return view
-    }
-
-    func updateUIView(_ view: UITextView, context: Context) {
-        guard context.coordinator.renderedSource != source else { return }
-        context.coordinator.renderedSource = source
-        view.attributedText = MarkdownRenderer.render(source)
-    }
-
-    func makeCoordinator() -> Coordinator {
-        Coordinator()
-    }
-
-    final class Coordinator {
-        var renderedSource: String?
     }
 }
